@@ -1,19 +1,22 @@
 .386
 .model flat,stdcall
 option casemap:none
+
 include \masm32\include\windows.inc
 include \masm32\include\user32.inc
 include \masm32\include\kernel32.inc
 include \masm32\include\gdi32.inc
 include \masm32\include\comdlg32.inc
 include \masm32\include\shell32.inc
+include \masm32\include\masm32rt.inc
+
+;Biblioteki
 includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\gdi32.lib
 includelib \masm32\lib\comdlg32.lib
 includelib \masm32\lib\shell32.lib
 
-WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
 
 RGB macro red,green,blue
 	xor		eax,eax
@@ -36,18 +39,24 @@ TitleGame         db "ARKANOID GAME",0
 TextInfo          db "Press 's' to Start Game",13,10
                   db "Press 'e' to Exit Game",0
 FontName          db "impact",0
+char              WPARAM 0
 ;_______________
 
 .code
 
-start:
-	invoke	GetModuleHandle,NULL
-	mov		hInstance,eax
-	invoke	GetCommandLine
-	invoke	WinMain,hInstance,NULL,CommandLine,SW_SHOWDEFAULT
-	invoke	ExitProcess,eax
+DllEntry PROC hInst:DWORD, reason:DWORD, reserved1:DWORD
 
-WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
+    .IF reason==DLL_PROCESS_ATTACH     ;Gdy DLL jest ³adowana
+        push hInst
+        pop   hInstance
+        call SplashScreen     
+    .ENDIF
+    mov eax, TRUE
+    ret
+
+DllEntry ENDP
+
+SplashScreen proc
 LOCAL wc	:WNDCLASSEX
 LOCAL msg 	:MSG
 LOCAL hwnd	:HWND
@@ -56,7 +65,7 @@ LOCAL hwnd	:HWND
 	mov		wc.lpfnWndProc,offset WndProc
 	mov		wc.cbClsExtra,NULL
 	mov		wc.cbWndExtra,NULL
-	push	hInst
+	push	hInstance
 	pop		wc.hInstance
       RGB         0,0,160
       invoke      CreateSolidBrush, eax
@@ -90,7 +99,7 @@ invoke CreateWindowEx,NULL,\
             300,\
             NULL,\
             NULL,\
-            hInst,\
+            hInstance,\
             NULL
 	mov		hwnd,eax
 	INVOKE	ShowWindow,hwnd,SW_SHOWNORMAL
@@ -103,7 +112,8 @@ invoke CreateWindowEx,NULL,\
 	.ENDW
  	mov	eax,msg.wParam
 	ret
-WinMain endp
+SplashScreen endp
+
 WndProc proc hWnd:HWND,uMsg:UINT,wParam:WPARAM,lParam:LPARAM
 
 LOCAL hdc: HDC
@@ -139,6 +149,14 @@ LOCAL hfont: HFONT
                DT_CENTER or DT_NOPREFIX
 
         INVOKE EndPaint, hWnd, ADDR ps
+      .ELSEIF uMsg == WM_CHAR
+        push wParam
+        pop char
+        .IF char == 's'
+            invoke DestroyWindow, hWnd
+        .ELSEIF char == 'e'
+            invoke ExitProcess, 0
+        .ENDIF
 	.ELSE
 		invoke	DefWindowProc,hWnd,uMsg,wParam,lParam
 		ret
@@ -146,4 +164,6 @@ LOCAL hfont: HFONT
 	xor		eax,eax
 	ret
 WndProc endp
-end start
+
+
+END DllEntry

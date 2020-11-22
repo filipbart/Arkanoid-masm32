@@ -1,0 +1,2 @@
+LIBRARY splash
+EXPORTS SplashScreen

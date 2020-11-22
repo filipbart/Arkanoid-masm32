@@ -16,7 +16,15 @@ includelib \masm32\lib\gdi32.lib
 includelib \masm32\lib\comdlg32.lib
 includelib \masm32\lib\shell32.lib
 
-WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
+WinMain PROTO :DWORD, :DWORD, :DWORD, :DWORD
+
+RGB macro red,green,blue
+	xor		eax,eax
+	mov		ah,blue
+	shl		eax,8
+	mov		ah,green
+	mov		al,red
+endm
 
 .CONST
 IDB_BACKGROUND equ 1000
@@ -25,28 +33,45 @@ IDB_BACKGROUND equ 1000
 .DATA                     
 ClassName db "Arkanoid",0        ; nazwa naszej klasy window
 AppName db "Arkanoid Game",0        ; nazwa naszego okienka
+LibName db "splash.dll",0
+FunctionName db "SplashScreen",0
 
 .DATA?                ; niezainicjowane dane
 hInstance HINSTANCE ?        ; Instancyjny uchwyt naszego programu
 hImage dd ?
+CommandLine LPSTR ?
+hLib dd ?
 
 .CODE                ; Tu zaczyna siê nasz kod
 start:
-invoke GetModuleHandle, NULL            
-mov hInstance,eax
-invoke WinMain, hInstance,NULL,NULL, SW_SHOWDEFAULT        ; wywo³anie g³ównej funkcji
-invoke ExitProcess, eax                           ; zakoñczenie programu. Kod powrotu jest zwracany w eax z WinMain.
+
+INVOKE LoadLibrary, ADDR LibName
+     .IF eax!=NULL
+        mov hLib, eax
+        INVOKE GetProcAddress, hLib, ADDR FunctionName 
+    .ENDIF
+INVOKE FreeLibrary, eax
+    
+INVOKE GetModuleHandle, NULL
+    mov    hInstance, eax
+    INVOKE GetCommandLine
+    mov    CommandLine, eax
+    INVOKE WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
+    INVOKE ExitProcess, eax
+
+WinMain PROC hInst:     HINSTANCE,\
+             hPrevInst: HINSTANCE,\
+             CmdLine:   LPSTR,\
+             CmdShow:   DWORD
 
 
-
-WinMain proc hInst:HINSTANCE,\
-        hPrevInst:HINSTANCE,\
-        CmdLine:LPSTR,\
-        CmdShow:DWORD
 
 LOCAL wc:WNDCLASSEX                                            ; tworzenie localych zmiennych na stosie
 LOCAL msg:MSG
 LOCAL hwnd:HWND
+
+invoke	GetModuleHandle,NULL
+mov		hInstance,eax
 
     mov   wc.cbSize,SIZEOF WNDCLASSEX                   ; wype³nienie wartoœci struktury wc
     mov   wc.style, CS_HREDRAW or CS_VREDRAW
@@ -91,7 +116,7 @@ LOCAL hwnd:HWND
                 hInst,\
                 NULL
     mov   hwnd,eax
-    invoke ShowWindow, hwnd,CmdShow               ; wyœwietlenie naszego okienka na ekranie
+    invoke ShowWindow, hwnd,SW_SHOWNORMAL               ; wyœwietlenie naszego okienka na ekranie
     invoke UpdateWindow, hwnd                                 ; odœwie¿enie obszaru roboczego
 
     .WHILE TRUE                                                         ; wprowadzenie pêtli sprawdzania wiadomoœci
@@ -122,7 +147,7 @@ LOCAL rect: RECT
          mov      hMemDC, eax
          invoke   SelectObject,hMemDC,hImage
          invoke   GetClientRect,hWnd,addr rect
-         invoke   BitBlt,hdc,0,0,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
+         invoke   BitBlt,hdc,0,20,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
          invoke   DeleteDC,hMemDC
 	   invoke	CreatePen,PS_SOLID,1,00000000h	;Shape2
 	   invoke	SelectObject,hdc,eax			;Shape2
