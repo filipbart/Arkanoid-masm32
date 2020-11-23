@@ -1,4 +1,6 @@
 #define IDB_BACKGROUND 1000
+#define IDB_PAD 2137
 
 8190 ICON MOVEABLE PURE LOADONCALL files\arkanoid.ico
 IDB_BACKGROUND BITMAP "files\background.bmp"
+IDB_PAD BITMAP "files\pad.bmp"

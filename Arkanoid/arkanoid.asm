@@ -8,6 +8,7 @@ include \masm32\include\kernel32.inc
 include \masm32\include\gdi32.inc
 include \masm32\include\comdlg32.inc
 include \masm32\include\shell32.inc
+include \masm32\include\msimg32.inc
 
 ;Biblioteki
 includelib \masm32\lib\user32.lib
@@ -15,6 +16,7 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\gdi32.lib
 includelib \masm32\lib\comdlg32.lib
 includelib \masm32\lib\shell32.lib
+includelib \masm32\lib\msimg32.lib
 
 WinMain PROTO :DWORD, :DWORD, :DWORD, :DWORD
 
@@ -28,6 +30,7 @@ endm
 
 .CONST
 IDB_BACKGROUND equ 1000
+IDB_PAD equ 2137
 
 ;Inicjalizacja danych
 .DATA                     
@@ -36,11 +39,13 @@ AppName db "Arkanoid Game",0        ; nazwa naszego okienka
 LibName db "splash.dll",0
 FunctionName db "SplashScreen",0
 
+
 .DATA?                ; niezainicjowane dane
 hInstance HINSTANCE ?        ; Instancyjny uchwyt naszego programu
 hImage dd ?
 CommandLine LPSTR ?
 hLib dd ?
+hPad dd ?
 
 .CODE                ; Tu zaczyna siê nasz kod
 start:
@@ -80,7 +85,9 @@ mov		hInstance,eax
     mov   wc.cbWndExtra,NULL
     push  hInstance
     pop   wc.hInstance
-    mov   wc.hbrBackground,COLOR_WINDOW+1
+    RGB   32,32,32
+    invoke	CreateSolidBrush,eax
+    mov   wc.hbrBackground,eax
     mov   wc.lpszMenuName,NULL
     mov   wc.lpszClassName,OFFSET ClassName
     invoke LoadIcon,hInstance,8190
@@ -106,11 +113,11 @@ mov		hInstance,eax
     invoke CreateWindowEx,NULL,\
                 ADDR ClassName,\
                 ADDR AppName,\
-                WS_OVERLAPPEDWINDOW,\
+                WS_SYSMENU or WS_MINIMIZEBOX or WS_SIZEBOX,\
                 ebx,\
                 eax,\
-                800,\
-                600,\
+                824,\
+                664,\
                 NULL,\
                 NULL,\
                 hInst,\
@@ -129,37 +136,312 @@ mov		hInstance,eax
     ret
 WinMain endp
 
-WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+DrawLevel1 proc hWnd:HWND
 LOCAL ps: PAINTSTRUCT
 LOCAL hdc: HDC
 LOCAL hMemDC: HDC
 LOCAL rect: RECT
+
+         invoke	BeginPaint,hWnd,ADDR ps
+         mov      hdc, eax
+         invoke   CreateCompatibleDC,hdc
+         mov      hMemDC, eax
+         invoke   SelectObject,hMemDC,hImage
+         invoke   GetClientRect,hWnd,addr rect
+         invoke   BitBlt,hdc,0,0,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
+         
+
+;==========FIFTH ROW============
+
+         invoke	CreatePen,PS_SOLID,1,00800080h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,710,140,800,160	
+
+         invoke	CreatePen,PS_SOLID,1,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,610,140,700,160	
+
+         invoke	CreatePen,PS_SOLID,1,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,510,140,600,160	
+
+         invoke	CreatePen,PS_SOLID,1,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,410,140,500,160	
+
+         invoke	CreatePen,PS_SOLID,1,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,310,140,400,160	
+
+         invoke	CreatePen,PS_SOLID,1,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00800080h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,210,140,300,160	      
+
+         invoke	CreatePen,PS_SOLID,1,00800080h	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	CreateSolidBrush,00800080h       	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	Rectangle,hdc,110,140,200,160	      ;Shape2
+
+
+	   invoke	CreatePen,PS_SOLID,1,00800080h	;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	CreateSolidBrush,00800080h	      ;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	Rectangle,hdc,10,140,100,160	      ;Shape1
+
+;==========FOURTH ROW============
+
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,710,110,800,130	
+
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,610,110,700,130	
+     
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,510,110,600,130	
+
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,410,110,500,130	
+
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,310,110,400,130	
+
+         invoke   CreatePen,PS_SOLID,1,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00FFFF00h
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,210,110,300,130	      
+
+         invoke	CreatePen,PS_SOLID,1,00FFFF00h	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	CreateSolidBrush,00FFFF00h       	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	Rectangle,hdc,110,110,200,130	      ;Shape2
+
+	   invoke	CreatePen,PS_SOLID,1,00FFFF00h	;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	CreateSolidBrush,00FFFF00h	      ;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	Rectangle,hdc,10,110,100,130	      ;Shape1
+
+;==========THIRD ROW============
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,710,80,800,100	
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,610,80,700,100	
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,510,80,600,100	
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,410,80,500,100	
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,310,80,400,100	
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,0000FFFFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,210,80,300,100	      
+
+         invoke	CreatePen,PS_SOLID,1,0000FFFFh	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	CreateSolidBrush,0000FFFFh		;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	Rectangle,hdc,110,80,200,100	      ;Shape2
+
+	   invoke	CreatePen,PS_SOLID,1,0000FFFFh	;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	CreateSolidBrush,0000FFFFh	      ;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	Rectangle,hdc,10,80,100,100	      ;Shape1
+
+;==========SECOND ROW============
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,710,50,800,70	
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,610,50,700,70	
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,510,50,600,70	
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,410,50,500,70	
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,310,50,400,70	
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,00008000h		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,210,50,300,70	      
+
+         invoke	CreatePen,PS_SOLID,1,00008000h	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	CreateSolidBrush,00008000h		;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	Rectangle,hdc,110,50,200,70	      ;Shape2
+
+	   invoke	CreatePen,PS_SOLID,1,00008000h	;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	CreateSolidBrush,00008000h		;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	Rectangle,hdc,10,50,100,70	      ;Shape1
+
+;==========FIRST ROW============
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,710,20,800,40	
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,610,20,700,40	
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,510,20,600,40	
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,410,20,500,40	
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,310,20,400,40	
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	
+	   invoke	SelectObject,hdc,eax			
+	   invoke	CreateSolidBrush,000000FFh		
+	   invoke	SelectObject,hdc,eax			
+	   invoke	Rectangle,hdc,210,20,300,40	      
+
+         invoke	CreatePen,PS_SOLID,1,000000FFh	;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	CreateSolidBrush,000000FFh		;Shape2
+	   invoke	SelectObject,hdc,eax			;Shape2
+	   invoke	Rectangle,hdc,110,20,200,40	      ;Shape2
+
+	   invoke	CreatePen,PS_SOLID,1,000000FFh	;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	CreateSolidBrush,000000FFh		;Shape1
+	   invoke	SelectObject,hdc,eax			;Shape1
+	   invoke	Rectangle,hdc,10,20,100,40	      ;Shape1
+                        ;poczatekL, poczatekT, koniecL, koniecT,
+
+         invoke   SelectObject,hMemDC,hPad
+         invoke   TransparentBlt, hdc, 362, 583, 85, 17, hMemDC, 0, 0, 85, 17, 16777215
+   invoke   DeleteDC,hMemDC      
+   invoke EndPaint, hWnd, ADDR ps
+   ret
+
+DrawLevel1 endp
+
+
+;============Pad==============
+DrawPad proc hWnd:HWND
+
+LOCAL ps: PAINTSTRUCT
+LOCAL hdc: HDC
+LOCAL hMemDC: HDC
+LOCAL rect: RECT
+
+         
+         ;RGB      255,255,255
+         ;invoke   TransparentBlt, hdc, 0, 0, 500, 500, hMemDC, 0, 0, 500, 500, ebx
+         invoke   DeleteDC,hMemDC      
+         invoke   EndPaint, hWnd, ADDR ps
+
+ret
+   
+DrawPad endp
+
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+
     .IF uMsg==WM_DESTROY                           ; gdy u¿ytkownik zamyka nasze okno
         invoke DeleteObject, hImage
         invoke PostQuitMessage,NULL             ; zakoñczenie naszej aplikacji
     .ELSEIF uMsg == WM_CREATE
         invoke LoadBitmap,hInstance,IDB_BACKGROUND
         mov hImage,eax
-    .ELSEIF uMsg == WM_PAINT
-	   invoke	BeginPaint,hWnd,ADDR ps
-	   mov	hdc,eax
-         invoke   CreateCompatibleDC,hdc
-         mov      hMemDC, eax
-         invoke   SelectObject,hMemDC,hImage
-         invoke   GetClientRect,hWnd,addr rect
-         invoke   BitBlt,hdc,0,20,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
-         invoke   DeleteDC,hMemDC
-	   invoke	CreatePen,PS_SOLID,1,00000000h	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,00FFFFFFh		;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,0,0,30,65			;Shape2
-	   invoke	CreatePen,PS_SOLID,1,000000FFh	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,000000FFh		;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,56,56,129,73	;Shape1
-         invoke	EndPaint,hWnd,ADDR ps
+        invoke LoadBitmap,hInstance,IDB_PAD
+        mov hPad, eax
+     .ELSEIF uMsg == WM_PAINT
+        invoke DrawLevel1, hWnd
+        invoke DrawPad, hWnd
     .ELSE
         invoke DefWindowProc,hWnd,uMsg,wParam,lParam     ; domyœlne przetwarzanie wiadomoœci
         ret
@@ -167,5 +449,6 @@ LOCAL rect: RECT
     xor eax,eax
     ret
 WndProc endp
+
 
 end start
