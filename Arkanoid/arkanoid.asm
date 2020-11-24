@@ -31,6 +31,7 @@ endm
 .CONST
 IDB_BACKGROUND equ 1000
 IDB_PAD equ 2137
+IDB_BALL equ 1337
 
 ;Inicjalizacja danych
 .DATA                     
@@ -38,7 +39,21 @@ ClassName db "Arkanoid",0        ; nazwa naszej klasy window
 AppName db "Arkanoid Game",0        ; nazwa naszego okienka
 LibName db "splash.dll",0
 FunctionName db "SplashScreen",0
+UpdatePad BYTE 0
+xPad DWORD 362
+BallSpeed BYTE 4
 
+Ball struct
+
+    bwidth BYTE 8
+    bheight BYTE 8
+    x byte 50
+    y byte 50
+
+    movex BYTE 1
+    movey BYTE 1
+
+Ball ends
 
 .DATA?                ; niezainicjowane dane
 hInstance HINSTANCE ?        ; Instancyjny uchwyt naszego programu
@@ -46,6 +61,7 @@ hImage dd ?
 CommandLine LPSTR ?
 hLib dd ?
 hPad dd ?
+char WPARAM ?
 
 .CODE                ; Tu zaczyna siê nasz kod
 start:
@@ -136,20 +152,30 @@ mov		hInstance,eax
     ret
 WinMain endp
 
-DrawLevel1 proc hWnd:HWND
+DrawLevel1 proc hWnd:HWND, xpad:DWORD, upad:BYTE
 LOCAL ps: PAINTSTRUCT
 LOCAL hdc: HDC
 LOCAL hMemDC: HDC
 LOCAL rect: RECT
 
-         invoke	BeginPaint,hWnd,ADDR ps
-         mov      hdc, eax
-         invoke   CreateCompatibleDC,hdc
-         mov      hMemDC, eax
+
+        INVOKE BeginPaint, hWnd, ADDR ps
+        mov    hdc, eax
+        INVOKE CreateCompatibleDC, hdc
+        mov    hMemDC, eax
+         mov      al, upad
+         cmp      al, 1
+         jne     DrawStart
+         jle      PadDraw
+
+
+DrawStart:
+
+;==========BACKGROUND=============
+
          invoke   SelectObject,hMemDC,hImage
          invoke   GetClientRect,hWnd,addr rect
          invoke   BitBlt,hdc,0,0,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
-         
 
 ;==========FIFTH ROW============
 
@@ -401,12 +427,29 @@ LOCAL rect: RECT
 	   invoke	SelectObject,hdc,eax			;Shape1
 	   invoke	Rectangle,hdc,10,20,100,40	      ;Shape1
                         ;poczatekL, poczatekT, koniecL, koniecT,
+         mov      ebx, xPad
+        invoke   SelectObject,hMemDC,hPad
+        invoke   TransparentBlt, hdc, ebx, 583, 85, 17, hMemDC, 0, 0, 85, 17, 16777215
+        invoke UpdateWindow, hWnd
 
-         invoke   SelectObject,hMemDC,hPad
-         invoke   TransparentBlt, hdc, 362, 583, 85, 17, hMemDC, 0, 0, 85, 17, 16777215
-   invoke   DeleteDC,hMemDC      
-   invoke EndPaint, hWnd, ADDR ps
-   ret
+         jmp PadDraw
+         jmp EndDraw
+
+PadDraw:  
+
+;============PLATFORM===============
+        mov      ebx, xPad
+        invoke   SelectObject,hMemDC,hPad
+        invoke   TransparentBlt, hdc, ebx, 583, 85, 17, hMemDC, 0, 0, 85, 17, 16777215
+        ;jmp EndDraw
+
+EndDraw:
+
+        invoke   DeleteDC,hMemDC      
+        invoke EndPaint, hWnd, ADDR ps
+
+
+ret
 
 DrawLevel1 endp
 
@@ -439,9 +482,25 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         mov hImage,eax
         invoke LoadBitmap,hInstance,IDB_PAD
         mov hPad, eax
-     .ELSEIF uMsg == WM_PAINT
-        invoke DrawLevel1, hWnd
-        invoke DrawPad, hWnd
+    .ELSEIF uMsg == WM_PAINT
+        invoke DrawLevel1, hWnd, xPad,UpdatePad
+    .ELSEIF uMsg == WM_CHAR
+         push wParam
+         pop char
+        .IF char == 'a' 
+            .IF xPad > 2
+            ;invoke DeleteObject, hPad
+            sub xPad, 4
+            mov UpdatePad, 1
+            invoke InvalidateRect, hWnd, NULL, FALSE
+            .ENDIF
+        .ELSEIF char == 'd'
+            .IF xPad < 722
+            add xPad, 4
+            mov UpdatePad, 1
+            invoke InvalidateRect, hWnd, NULL, FALSE
+            .ENDIF
+        .ENDIF            
     .ELSE
         invoke DefWindowProc,hWnd,uMsg,wParam,lParam     ; domyœlne przetwarzanie wiadomoœci
         ret
