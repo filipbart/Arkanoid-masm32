@@ -52,7 +52,7 @@ Ball struct
     x dd 50
     y dd 50
 
-    movex dd 12
+    movex dd 2
     movey dd 4
 
 Ball ends
@@ -61,8 +61,8 @@ ball Ball <>
 
 Pad struct
 
-    pwidth BYTE 85
-    pheight BYTE 17
+    pwidth dd 85
+    pheight dd 17
     x DWORD 362
     y DWORD 583
 
@@ -473,34 +473,83 @@ ret
 
 DrawLevel1 endp
 
-
+;========================COLLISION=============================
 Collision proc
 
-mov ebx, ball.y
-add ebx, ball.bheight
-.IF pad.y <= ebx
-not ball.movey
-    mov eax, pad.x
-    .IF ball.x >= eax
-        add eax, 85
-        .IF ball.x <= eax
-            neg ball.movey
-        .ENDIF
-    .ENDIF
-.ELSEIF pad.y <= 4
-    neg ball.movey
-.ELSEIF ball.x <= 0
-    neg ball.movex
-.ELSEIF ball.x >= 810
-    neg ball.movex
-.ENDIF
 mov ebx, 0
 mov eax, 0
 
+;========WINDOW COLLISION======   
+cmp ball.y, 0
+jle NegMovey
+cmp ball.x, 0
+jle NegMovex
+cmp ball.x, 810
+jge NegMovex
+
+;========================PAD COLLISION========================
+mov ebx, ball.y             ;ebx = ball.y
+add ebx, ball.bheight       ;ebx = ball.y.bottom
+cmp ebx, pad.y              ;compare pad.y with ball.y.bottom
+jge PadCollision            ;if ball.y.bottom >= pad.y.top -> jmp to padcollision 
+jmp NotEqual                ;else
+
+PadCollision:
+    mov eax, pad.x          ;eax = pad.x.left
+    mov ebx, ball.x         ;ebx = ball.x.left
+    add ebx, ball.bwidth    ;ebx = ball.x.right
+    cmp ebx, eax
+    jge PadCollisionTrue    ;if ball.x.right >= pad.x.left - > jmp to PadCollisionTrue
+    jmp NotEqual
+   
+
+PadCollisionTrue:
+    add eax, 14             ;eax += 14 -> end orange part of pad left
+    cmp ebx, eax            
+    jle MovexChange         ;jmp to MovexChange if ball hits orange part of pad left
+    mov eax, pad.x          ;eax = pad.x.left
+    add eax, pad.pwidth     ;eax = pad.x.right
+    cmp ball.x, eax
+    jge NotEqual            ;PadCollisionNotTrue
+    sub eax, 14             ;eax -= 14 -> start orange part of pad right
+    cmp ball.x, eax             
+    jge MovexChange         ;if ball hits orange part of pad right
+    add eax, 14             ;eax = pad.x.right
+    sub eax, 42             ;eax = pad.x.center
+    cmp ball.x, eax         
+    jge MovexNormalRight    ;ball.x >= pad.x.center
+    jmp MovexNormalLeft     ;else
+
+MovexChange:
+    mov ball.movex, 4
+    neg ball.movex
+    jmp NegMovey
+    
+MovexNormalRight:
+    mov ball.movex, 2
+    jmp NegMovey
+
+MovexNormalLeft:
+    mov ball.movex, -2
+    jmp NegMovey
+
+NegMovey: 
+    neg ball.movey
+    jmp NotEqual
+    
+NegMovex:
+    neg ball.movex
+    jmp NotEqual
+ 
+NotEqual:
+    mov ebx, 0
+    mov eax, 0
+
 ret
+
 Collision endp
 
-
+;=============================BALL MOVEMENT=======================
 BallUpdate proc
 
 mov eax, ball.movex
@@ -511,6 +560,23 @@ add ball.y, eax
         
 ret
 BallUpdate endp
+
+EndGame proc hWnd
+
+mov ebx, ball.y
+mov eax, pad.y
+add eax, pad.pheight
+
+cmp eax, ebx
+jl  EndEverything
+jmp NotEnd
+
+EndEverything:
+   invoke DeleteObject, hBall
+   invoke KillTimer, hWnd, ID_TIMER
+NotEnd:
+    ret
+EndGame endp
 
 DrawObjects proc hdc:HDC, prc:RECT, hWnd:HWND
 
@@ -549,7 +615,7 @@ LOCAL bg:HBRUSH
 
 ;==============BALL===================
     invoke SelectObject, hdcMem, hBall
-    invoke BitBlt, hdcBuffer, ball.x, ball.y, 8, 8, hdcMem, 0,0,SRCCOPY
+    invoke   TransparentBlt, hdcBuffer, ball.x, ball.y, ball.bheight, ball.bwidth, hdcMem, 0, 0, 8, 8, 16777215
 
 ;==============PLATFORM================
     invoke   SelectObject,hdcMem,hPad
@@ -596,9 +662,8 @@ LOCAL hdc:HDC
          invoke BallUpdate
          invoke DrawObjects, hdc, rcClient, hWnd
          invoke Collision
+         invoke EndGame, hWnd
          invoke ReleaseDC, hWnd, hdc             
-     .ELSEIF uMsg == WM_PAINT
-     invoke DrawLevel1, hWnd, pad.x, UpdatePad
     .ELSEIF uMsg == WM_CHAR
          push wParam
          pop char
@@ -608,7 +673,7 @@ LOCAL hdc:HDC
             sub pad.x, 6
             .ENDIF
         .ELSEIF char == 'd'
-            .IF pad.x < 722
+            .IF pad.x < 728
             add pad.x, 6
             .ENDIF
         .ENDIF            
