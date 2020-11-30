@@ -1,9 +1,18 @@
 #define IDB_BACKGROUND 1000
 #define IDB_PAD 2137
 #define IDB_BALL 1337
+#define IDB_BLOCK1 420
+#define IDB_BLOCK2 421
+#define IDB_BLOCK3 422
+#define IDB_BLOCK4 423
+#define IDB_BLOCK5 424
 
 8190 ICON MOVEABLE PURE LOADONCALL files\arkanoid.ico
 IDB_BALL BITMAP files\ball.bmp
 IDB_BACKGROUND BITMAP files\background.bmp
 IDB_PAD BITMAP files\pad.bmp
-
+IDB_BLOCK1 BITMAP files\Row1Block.bmp
+IDB_BLOCK2 BITMAP files\Row2Block.bmp
+IDB_BLOCK3 BITMAP files\Row3Block.bmp
+IDB_BLOCK4 BITMAP files\Row4Block.bmp
+IDB_BLOCK5 BITMAP files\Row5Block.bmp

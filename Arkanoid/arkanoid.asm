@@ -32,6 +32,11 @@ endm
 IDB_BACKGROUND equ 1000
 IDB_PAD equ 2137
 IDB_BALL equ 1337
+IDB_BLOCK1 equ 420
+IDB_BLOCK2 equ 421
+IDB_BLOCK3 equ 422
+IDB_BLOCK4 equ 423
+IDB_BLOCK5 equ 424
 
 
 ;Inicjalizacja danych
@@ -40,20 +45,31 @@ ClassName db "Arkanoid",0        ; nazwa naszej klasy window
 AppName db "Arkanoid Game",0        ; nazwa naszego okienka
 LibName db "splash.dll",0
 FunctionName db "SplashScreen",0
-UpdatePad BYTE 0
-BallSpeed BYTE 4
+TestText db "Testowy",0
 ID_TIMER dd 1
+Level1Blocks DWORD 40 dup (1)
+Lifes BYTE 3
 
+Block struct
+
+    x dd 10
+    y dd 20
+    bwidth dd 90
+    bheight dd 20
+
+Block ends
+
+block Block <>
 
 Ball struct
 
     bwidth dd 8
     bheight dd 8
-    x dd 50
-    y dd 50
+    x dd 402
+    y dd 570
 
-    movex dd 2
-    movey dd 4
+    movex dd -2
+    movey dd -4
 
 Ball ends
 
@@ -77,8 +93,12 @@ hLib dd ?
 hImage HBITMAP ?
 hPad HBITMAP ?
 hBall HBITMAP ?
+hBlock1 HBITMAP ?
+hBlock2 HBITMAP ?
+hBlock3 HBITMAP ?
+hBlock4 HBITMAP ?
+hBlock5 HBITMAP ?
 char WPARAM ?
-TestText db ?
 
 .CODE                ; Tu zaczyna siê nasz kod
 start:
@@ -185,16 +205,8 @@ LOCAL OldPad:HBITMAP
         mov      al, upad
         cmp      al, 1
         jne     DrawStart
-        jle      PadDraw
-
 
 DrawStart:
-
-;==========BACKGROUND=============
-
-         invoke   SelectObject,hMemDC,hImage
-         invoke   GetClientRect,hWnd,addr rect
-         invoke   BitBlt,hdc,0,0,rect.right,rect.bottom,hMemDC,0,0,SRCCOPY
 
 ;==========FIFTH ROW============
 
@@ -447,31 +459,13 @@ DrawStart:
 	   invoke	Rectangle,hdc,10,20,100,40	      ;Shape1
                         ;poczatekL, poczatekT, koniecL, koniecT,
         
-        invoke   SelectObject, hMemDC, OldPad
-        ;invoke UpdateWindow, hWnd
 
-         ;jmp PadDraw
-         jmp EndDraw
-
-PadDraw:  
-
-;============PLATFORM===============
-
-        invoke   DeleteObject, hPad
-        invoke   SelectObject,hMemDC,hPad
-        invoke   TransparentBlt, hdc, pad.x, pad.y, 85, 17, hMemDC, 0, 0, 85, 17, 16777215
-        invoke   SelectObject, hMemDC, OldPad
-        jmp EndDraw
-
-EndDraw:
-
-        invoke   DeleteDC,hMemDC      
-        invoke EndPaint, hWnd, ADDR ps
 
 
 ret
 
 DrawLevel1 endp
+
 
 ;========================COLLISION=============================
 Collision proc
@@ -479,7 +473,7 @@ Collision proc
 mov ebx, 0
 mov eax, 0
 
-;========WINDOW COLLISION======   
+;====================WINDOW COLLISION==========================   
 cmp ball.y, 0
 jle NegMovey
 cmp ball.x, 0
@@ -487,7 +481,7 @@ jle NegMovex
 cmp ball.x, 810
 jge NegMovex
 
-;========================PAD COLLISION========================
+;========================PAD COLLISION=========================
 mov ebx, ball.y             ;ebx = ball.y
 add ebx, ball.bheight       ;ebx = ball.y.bottom
 cmp ebx, pad.y              ;compare pad.y with ball.y.bottom
@@ -513,7 +507,7 @@ PadCollisionTrue:
     jge NotEqual            ;PadCollisionNotTrue
     sub eax, 14             ;eax -= 14 -> start orange part of pad right
     cmp ball.x, eax             
-    jge MovexChange         ;if ball hits orange part of pad right
+    jge MovexChangeRight         ;if ball hits orange part of pad right
     add eax, 14             ;eax = pad.x.right
     sub eax, 42             ;eax = pad.x.center
     cmp ball.x, eax         
@@ -523,6 +517,10 @@ PadCollisionTrue:
 MovexChange:
     mov ball.movex, 4
     neg ball.movex
+    jmp NegMovey
+
+MovexChangeRight:
+    mov ball.movex, 4
     jmp NegMovey
     
 MovexNormalRight:
@@ -561,33 +559,20 @@ add ball.y, eax
 ret
 BallUpdate endp
 
-EndGame proc hWnd
 
-mov ebx, ball.y
-mov eax, pad.y
-add eax, pad.pheight
-
-cmp eax, ebx
-jl  EndEverything
-jmp NotEnd
-
-EndEverything:
-   invoke DeleteObject, hBall
-   invoke KillTimer, hWnd, ID_TIMER
-NotEnd:
-    ret
-EndGame endp
-
+;===================DRAWING OBJECTS ON SCREEN================
 DrawObjects proc hdc:HDC, prc:RECT, hWnd:HWND
 
 ;=========LOCAL variables=========
-LOCAL ps: PAINTSTRUCT
 LOCAL hdcBuffer:HDC
 LOCAL hbmBuffer:HBITMAP
 LOCAL hbmOldBuffer:HBITMAP
 LOCAL hdcMem:HDC
 LOCAL hbmOld:HBITMAP
 LOCAL bg:HBRUSH
+LOCAL number:DWORD
+LOCAL index:DWORD
+LOCAL row:DWORD
 
 
 
@@ -608,10 +593,33 @@ LOCAL bg:HBRUSH
     RGB   32,32,32
     invoke	CreateSolidBrush,eax
     invoke FillRect, hdcBuffer, addr prc, eax
-    
+
+   
+        
 ;============BACKGROUND================
     invoke SelectObject, hdcMem, hImage
     invoke BitBlt, hdcBuffer, 0, 0, prc.right, prc.bottom, hdcMem, 0, 0, SRCCOPY
+
+;================BLOCKS====================
+
+
+mov ecx, 0
+mov ebx, 0
+mov number, 0
+mov index, 0 
+
+.REPEAT
+    mov ebx, [Level1Blocks + ecx * 4]
+    mov number, ebx
+    mov index, ecx
+    .IF(number == 1)
+        invoke SelectObject, hdcMem, hBlock1
+        invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ENDIF
+    add block.x, 100  
+    mov ecx, index
+    inc ecx
+.UNTIL ecx == 8
 
 ;==============BALL===================
     invoke SelectObject, hdcMem, hBall
@@ -636,6 +644,25 @@ ret
 
 DrawObjects endp
 
+;======================ENDGAME=========================
+
+EndGame proc hdc:HDC, prc:RECT, hWnd:HWND
+
+mov ebx, ball.y
+mov eax, pad.y
+add eax, pad.pheight
+
+cmp eax, ebx
+jl  EndEverything
+jmp NotEnd
+
+EndEverything:
+   mov ball.y, 1000
+   invoke DrawObjects, hdc, prc, hWnd
+   invoke KillTimer, hWnd, ID_TIMER
+NotEnd:
+    ret
+EndGame endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 LOCAL rcClient:RECT
@@ -646,34 +673,46 @@ LOCAL hdc:HDC
         invoke KillTimer, hWnd, ID_TIMER
         invoke PostQuitMessage,NULL             ; zakoñczenie naszej aplikacji
     .ELSEIF uMsg == WM_CREATE
+        ;call CreateBlocksArray
         invoke LoadBitmap,hInstance,IDB_BACKGROUND
         mov hImage,eax
         invoke LoadBitmap,hInstance,IDB_PAD
         mov hPad, eax
         invoke LoadBitmap, hInstance, IDB_BALL
         mov hBall, eax
-        
+        invoke LoadBitmap, hInstance, IDB_BLOCK1
+        mov hBlock1, eax
+        invoke LoadBitmap, hInstance, IDB_BLOCK2
+        mov hBlock2, eax
+        invoke LoadBitmap, hInstance, IDB_BLOCK3
+        mov hBlock3, eax
+        invoke LoadBitmap, hInstance, IDB_BLOCK4
+        mov hBlock4, eax
+        invoke LoadBitmap, hInstance, IDB_BLOCK5
+        mov hBlock5, eax
+
         invoke SetTimer, hWnd, ID_TIMER, 16, NULL
 
-    .ELSEIF uMsg == WM_TIMER
+    .ELSEIF uMsg == WM_TIMER   
+         mov block.x, 10
+         mov block.y, 20
          invoke GetDC, hWnd
          mov hdc, eax
          invoke GetClientRect, hWnd, ADDR rcClient
          invoke BallUpdate
          invoke DrawObjects, hdc, rcClient, hWnd
          invoke Collision
-         invoke EndGame, hWnd
+         invoke EndGame, hdc, rcClient, hWnd
          invoke ReleaseDC, hWnd, hdc             
     .ELSEIF uMsg == WM_CHAR
          push wParam
          pop char
         .IF char == 'a' 
             .IF pad.x > 2
-            ;invoke DeleteObject, hPad
             sub pad.x, 6
             .ENDIF
         .ELSEIF char == 'd'
-            .IF pad.x < 728
+            .IF pad.x < 729
             add pad.x, 6
             .ENDIF
         .ENDIF            
