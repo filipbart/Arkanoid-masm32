@@ -47,8 +47,10 @@ LibName db "splash.dll",0
 FunctionName db "SplashScreen",0
 TestText db "Testowy",0
 ID_TIMER dd 1
+TimeMS DWORD 16
 Level1Blocks DWORD 40 dup (1)
-Lifes BYTE 3
+Lifes db 3
+Score db 0
 
 Block struct
 
@@ -171,7 +173,7 @@ mov		hInstance,eax
                 WS_SYSMENU or WS_MINIMIZEBOX,\
                 ebx,\
                 eax,\
-                824,\
+                815,\
                 664,\
                 NULL,\
                 NULL,\
@@ -191,284 +193,16 @@ mov		hInstance,eax
     ret
 WinMain endp
 
-DrawLevel1 proc hWnd:HWND, xpad:DWORD, upad:BYTE
-LOCAL ps: PAINTSTRUCT
-LOCAL hdc: HDC
-LOCAL hMemDC: HDC
-LOCAL rect: RECT
-LOCAL OldPad:HBITMAP
-
-
-        invoke BeginPaint, hWnd, addr ps
-        INVOKE CreateCompatibleDC, hdc
-        mov    hMemDC, eax
-        mov      al, upad
-        cmp      al, 1
-        jne     DrawStart
-
-DrawStart:
-
-;==========FIFTH ROW============
-
-         invoke	CreatePen,PS_SOLID,1,00800080h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,710,140,800,160	
-
-         invoke	CreatePen,PS_SOLID,1,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,610,140,700,160	
-
-         invoke	CreatePen,PS_SOLID,1,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,510,140,600,160	
-
-         invoke	CreatePen,PS_SOLID,1,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,410,140,500,160	
-
-         invoke	CreatePen,PS_SOLID,1,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,310,140,400,160	
-
-         invoke	CreatePen,PS_SOLID,1,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00800080h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,210,140,300,160	      
-
-         invoke	CreatePen,PS_SOLID,1,00800080h	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,00800080h       	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,110,140,200,160	      ;Shape2
-
-
-	   invoke	CreatePen,PS_SOLID,1,00800080h	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,00800080h	      ;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,10,140,100,160	      ;Shape1
-
-;==========FOURTH ROW============
-
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,710,110,800,130	
-
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,610,110,700,130	
-     
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,510,110,600,130	
-
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,410,110,500,130	
-
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,310,110,400,130	
-
-         invoke   CreatePen,PS_SOLID,1,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00FFFF00h
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,210,110,300,130	      
-
-         invoke	CreatePen,PS_SOLID,1,00FFFF00h	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,00FFFF00h       	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,110,110,200,130	      ;Shape2
-
-	   invoke	CreatePen,PS_SOLID,1,00FFFF00h	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,00FFFF00h	      ;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,10,110,100,130	      ;Shape1
-
-;==========THIRD ROW============
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,710,80,800,100	
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,610,80,700,100	
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,510,80,600,100	
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,410,80,500,100	
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,310,80,400,100	
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,0000FFFFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,210,80,300,100	      
-
-         invoke	CreatePen,PS_SOLID,1,0000FFFFh	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,0000FFFFh		;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,110,80,200,100	      ;Shape2
-
-	   invoke	CreatePen,PS_SOLID,1,0000FFFFh	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,0000FFFFh	      ;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,10,80,100,100	      ;Shape1
-
-;==========SECOND ROW============
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,710,50,800,70	
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,610,50,700,70	
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,510,50,600,70	
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,410,50,500,70	
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,310,50,400,70	
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,00008000h		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,210,50,300,70	      
-
-         invoke	CreatePen,PS_SOLID,1,00008000h	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,00008000h		;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,110,50,200,70	      ;Shape2
-
-	   invoke	CreatePen,PS_SOLID,1,00008000h	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,00008000h		;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,10,50,100,70	      ;Shape1
-
-;==========FIRST ROW============
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,710,20,800,40	
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,610,20,700,40	
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,510,20,600,40	
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,410,20,500,40	
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,310,20,400,40	
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	
-	   invoke	SelectObject,hdc,eax			
-	   invoke	CreateSolidBrush,000000FFh		
-	   invoke	SelectObject,hdc,eax			
-	   invoke	Rectangle,hdc,210,20,300,40	      
-
-         invoke	CreatePen,PS_SOLID,1,000000FFh	;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	CreateSolidBrush,000000FFh		;Shape2
-	   invoke	SelectObject,hdc,eax			;Shape2
-	   invoke	Rectangle,hdc,110,20,200,40	      ;Shape2
-
-	   invoke	CreatePen,PS_SOLID,1,000000FFh	;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	CreateSolidBrush,000000FFh		;Shape1
-	   invoke	SelectObject,hdc,eax			;Shape1
-	   invoke	Rectangle,hdc,10,20,100,40	      ;Shape1
-                        ;poczatekL, poczatekT, koniecL, koniecT,
-        
-
-
-
-ret
-
-DrawLevel1 endp
-
 
 ;========================COLLISION=============================
 Collision proc
+LOCAL yBlockBottom:DWORD
+LOCAL yBlockHalf:DWORD
+LOCAL xBlockLeft:DWORD
+LOCAL xBlockRight:DWORD
+LOCAL row:DWORD
+LOCAL index:DWORD
+
 
 mov ebx, 0
 mov eax, 0
@@ -478,12 +212,110 @@ cmp ball.y, 0
 jle NegMovey
 cmp ball.x, 0
 jle NegMovex
-cmp ball.x, 810
+cmp ball.x, 804
 jge NegMovex
+
+;=========================BLOCKS COLLISION========================
+
+mov yBlockBottom, 140
+mov yBlockHalf, 130
+mov row, 1
+
+mov xBlockLeft, 710
+mov xBlockRight, 800
+
+.IF(ball.y <= 140) && (ball.y >= 120)
+mov ecx, 39
+.WHILE(ecx >= 32)
+mov ebx, xBlockLeft
+mov edx, xBlockRight
+.IF(ball.x >= ebx) && (ball.x <= edx)
+    mov eax, [Level1Blocks + ecx * 4]
+    .IF(eax == 1)
+        mov [Level1Blocks + ecx * 4], 0
+        neg ball.movey
+    .ENDIF
+.ENDIF
+sub xBlockLeft, 100
+sub xBlockRight, 100 
+dec ecx
+.ENDW 
+
+.ELSEIF(ball.y <= 115) && (ball.y >= 95)
+mov ecx, 31
+.WHILE(ecx >= 24)
+mov ebx, xBlockLeft
+mov edx, xBlockRight
+.IF(ball.x >= ebx) && (ball.x <= edx)
+    mov eax, [Level1Blocks + ecx * 4]
+    .IF(eax == 1)
+        mov [Level1Blocks + ecx * 4], 0
+        neg ball.movey
+    .ENDIF
+.ENDIF
+sub xBlockLeft, 100
+sub xBlockRight, 100 
+dec ecx
+.ENDW 
+
+.ELSEIF(ball.y <= 90) && (ball.y >= 70)
+mov ecx, 23
+.WHILE(ecx >= 16)
+mov ebx, xBlockLeft
+mov edx, xBlockRight
+.IF(ball.x >= ebx) && (ball.x <= edx)
+    mov eax, [Level1Blocks + ecx * 4]
+    .IF(eax == 1)
+        mov [Level1Blocks + ecx * 4], 0
+        neg ball.movey
+    .ENDIF
+.ENDIF
+sub xBlockLeft, 100
+sub xBlockRight, 100 
+dec ecx
+.ENDW 
+
+.ELSEIF(ball.y <= 65) && (ball.y >= 45)
+mov ecx, 15
+.WHILE(ecx >= 8)
+mov ebx, xBlockLeft
+mov edx, xBlockRight
+.IF(ball.x >= ebx) && (ball.x <= edx)
+    mov eax, [Level1Blocks + ecx * 4]
+    .IF(eax == 1)
+        mov [Level1Blocks + ecx * 4], 0
+        neg ball.movey
+    .ENDIF
+.ENDIF    
+sub xBlockLeft, 100
+sub xBlockRight, 100 
+dec ecx
+.ENDW 
+
+.ELSEIF(ball.y <= 40) && (ball.y >= 20)
+mov ecx, 7
+.REPEAT
+mov ebx, xBlockLeft
+mov edx, xBlockRight
+.IF(ball.x >= ebx) && (ball.x <= edx)
+    mov eax, [Level1Blocks + ecx * 4]
+    .IF(eax == 1)
+        mov [Level1Blocks + ecx * 4], 0
+        neg ball.movey
+    .ENDIF
+.ENDIF
+sub xBlockLeft, 100
+sub xBlockRight, 100 
+dec ecx
+.UNTIL ecx == 0
+.ENDIF
+
+
+
 
 ;========================PAD COLLISION=========================
 mov ebx, ball.y             ;ebx = ball.y
-add ebx, ball.bheight       ;ebx = ball.y.bottom
+add ebx, ball.bheight       ;ebx = ball.y.bottom               
 cmp ebx, pad.y              ;compare pad.y with ball.y.bottom
 jge PadCollision            ;if ball.y.bottom >= pad.y.top -> jmp to padcollision 
 jmp NotEqual                ;else
@@ -543,6 +375,7 @@ NotEqual:
     mov ebx, 0
     mov eax, 0
 
+
 ret
 
 Collision endp
@@ -601,25 +434,45 @@ LOCAL row:DWORD
     invoke BitBlt, hdcBuffer, 0, 0, prc.right, prc.bottom, hdcMem, 0, 0, SRCCOPY
 
 ;================BLOCKS====================
-
-
 mov ecx, 0
 mov ebx, 0
 mov number, 0
 mov index, 0 
-
+mov block.x, 10
+mov block.y, 20
 .REPEAT
     mov ebx, [Level1Blocks + ecx * 4]
     mov number, ebx
     mov index, ecx
+    mov eax, index
+    mov ebx, 8
+    div ebx
+    .IF(edx == 0) && (index > 0)
+        mov block.x, 10
+        add block.y, 25
+    .ENDIF
     .IF(number == 1)
+    .IF(index < 8)
         invoke SelectObject, hdcMem, hBlock1
         invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ELSEIF (index < 16)
+        invoke SelectObject, hdcMem, hBlock2
+        invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ELSEIF (index < 24)
+        invoke SelectObject, hdcMem, hBlock3
+        invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ELSEIF (index < 32)
+        invoke SelectObject, hdcMem, hBlock4
+        invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ELSE
+        invoke SelectObject, hdcMem, hBlock5
+        invoke TransparentBlt, hdcBuffer, block.x, block.y, 90, 20, hdcMem, 0, 0, 90, 20, 16777215
+    .ENDIF
     .ENDIF
     add block.x, 100  
     mov ecx, index
     inc ecx
-.UNTIL ecx == 8
+.UNTIL ecx == 40
 
 ;==============BALL===================
     invoke SelectObject, hdcMem, hBall
@@ -644,7 +497,15 @@ ret
 
 DrawObjects endp
 
-;======================ENDGAME=========================
+
+;======================WINGAME==========================
+
+WinGame proc
+
+
+WinGame endp
+
+;======================GAMEOVER=========================
 
 EndGame proc hdc:HDC, prc:RECT, hWnd:HWND
 
@@ -653,15 +514,29 @@ mov eax, pad.y
 add eax, pad.pheight
 
 cmp eax, ebx
-jl  EndEverything
+jl LoseLife
 jmp NotEnd
+
+LoseLife:
+    .IF(Lifes > 0)
+        dec Lifes
+        mov pad.x, 362
+        mov pad.y, 583
+        mov ball.x, 402
+        mov ball.y, 570
+        jmp NotEnd
+    .ELSE
+        jmp EndEverything
+    .ENDIF
 
 EndEverything:
    mov ball.y, 1000
    invoke DrawObjects, hdc, prc, hWnd
    invoke KillTimer, hWnd, ID_TIMER
+   
 NotEnd:
     ret
+    
 EndGame endp
 
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
@@ -691,9 +566,10 @@ LOCAL hdc:HDC
         invoke LoadBitmap, hInstance, IDB_BLOCK5
         mov hBlock5, eax
 
-        invoke SetTimer, hWnd, ID_TIMER, 16, NULL
+        invoke SetTimer, hWnd, ID_TIMER, TimeMS, NULL
 
-    .ELSEIF uMsg == WM_TIMER   
+    .ELSEIF uMsg == WM_TIMER
+         mov TimeMS, 16  
          mov block.x, 10
          mov block.y, 20
          invoke GetDC, hWnd
@@ -712,7 +588,7 @@ LOCAL hdc:HDC
             sub pad.x, 6
             .ENDIF
         .ELSEIF char == 'd'
-            .IF pad.x < 729
+            .IF pad.x < 718
             add pad.x, 6
             .ENDIF
         .ENDIF            
