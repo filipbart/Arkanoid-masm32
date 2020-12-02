@@ -1,6 +1,6 @@
-.386
-.model flat,stdcall
-option casemap:none
+.386					;zestaw wykorzystanych instrukcji, dyrektywa  informuj¹ca assembler aby korzystaæ z 80386
+.model flat,stdcall		;model pamiêci stosowany w programie
+option casemap:none		;rozró¿nanie wielkoœci liter
 
 include \masm32\include\windows.inc
 include \masm32\include\user32.inc
@@ -21,6 +21,7 @@ includelib \masm32\lib\msimg32.lib
 
 WinMain PROTO :DWORD, :DWORD, :DWORD, :DWORD
 
+;MACRO dla funkcji RGB, aby korzystaæ z palety kolorów RGB
 RGB macro red,green,blue
 	xor		eax,eax
 	mov		ah,blue
@@ -29,6 +30,7 @@ RGB macro red,green,blue
 	mov		al,red
 endm
 
+;Sta³e przeznaczone dla bitmap
 .CONST
 IDB_BACKGROUND equ 1000
 IDB_PAD equ 2137
@@ -40,50 +42,50 @@ IDB_BLOCK4 equ 423
 IDB_BLOCK5 equ 424
 
 
-;Inicjalizacja danych
+;Inicjalizacja danych/zmiennych
 .DATA                     
 ClassName db "Arkanoid",0        ; nazwa naszej klasy window
 AppName db "Arkanoid Game",0        ; nazwa naszego okienka
-LibName db "splash.dll",0
-FunctionName db "SplashScreen",0
-FontName db "Helvetica",0
+LibName db "splash.dll",0        ;Bilbioteka ekranu startowego
+FunctionName db "SplashScreen",0 
+FontName db "Helvetica",0        ;Nazwy czcionek
 FontName2 db "impact",0
-ScoreText db "Score:",0
-LifesText db "Lifes:",0
+ScoreText db "Score:",0          ;Napis do wyœwietlania punktów
+LifesText db "Lifes:",0          ;¯ycia
 WinText db "YOU WON!",0
 LoseText db "GAME OVER",0
 HelpText db "a,d - to move the pad    r - to reset game"
-ID_TIMER dd 1
-Level1Blocks DWORD 40 dup (1)
-Lifes DWORD 3
-Score DWORD 0
+ID_TIMER dd 1                   ;ID timera
+Level1Blocks DWORD 40 dup (1)   ;Tablica 40 elementowa wype³niona 1
+Lifes DWORD 3                   ;Liczba ¿yæ
+Score DWORD 0                   ;Liczba puntków
+    
+Block struct                    ;Struktura bloków
 
-Block struct
-
-    x dd 10
-    y dd 20
-    bwidth dd 90
-    bheight dd 20
+    x dd 10                     ;Pozycja x
+    y dd 20                     ;Pozycja y
+    bwidth dd 90                ;Szerokoœæ
+    bheight dd 20               ;D³ugoœæ
 
 Block ends
 
 block Block <>
 
-Ball struct
+Ball struct						;Struktura pi³ki
 
-    bwidth dd 8
+    bwidth dd 8					
     bheight dd 8
     x dd 402
     y dd 570
 
-    movex dd -4
-    movey dd -2
+    movex dd -4					;Prêdkoœæ x'owa
+    movey dd -2					;Prêdkoœæ y'owa
 
 Ball ends
 
 ball Ball <>
 
-Pad struct
+Pad struct						;Struktóra pad'a/platformy
 
     pwidth dd 85
     pheight dd 17
@@ -95,10 +97,10 @@ Pad ends
 pad Pad <>
 
 .DATA?                ; niezainicjowane dane
-hInstance HINSTANCE ?        ; Instancyjny uchwyt naszego programu
+hInstance HINSTANCE ?        ; Instancyjny uchwyt naszego programu, dziêki niemu windows rozró¿nia kopie uruchiomonego programu
 CommandLine LPSTR ?
-hLib dd ?
-hImage HBITMAP ?
+hLib dd ?				
+hImage HBITMAP ?		;Niezainicjalizowana zmienna bitmapowa
 hPad HBITMAP ?
 hBall HBITMAP ?
 hBlock1 HBITMAP ?
@@ -106,15 +108,14 @@ hBlock2 HBITMAP ?
 hBlock3 HBITMAP ?
 hBlock4 HBITMAP ?
 hBlock5 HBITMAP ?
-char WPARAM ?
-numbBuff db 11 dup (?)
+char WPARAM ?			;Niezainicjalizowana zmienna wparam'etrowa, przechowuje wciœniêty klawisz przez u¿ytkownika
+numbBuff db 11 dup (?)	;Niezainicjalizowana tablica 11 elementowa
 
 
-.CODE                ; Tu zaczyna siê nasz kod
+.CODE                ; Tu zaczyna siê kod
 start:
 
-
-
+;Funkcja czekaj¹ca, a¿ ekran startowy zostanie zamkniêty
 INVOKE LoadLibrary, ADDR LibName
      .IF eax!=NULL
         mov hLib, eax
@@ -123,72 +124,68 @@ INVOKE LoadLibrary, ADDR LibName
 INVOKE FreeLibrary, eax
 
 
-
-INVOKE GetModuleHandle, NULL
-    mov    hInstance, eax
+INVOKE GetModuleHandle, NULL ;Pobieranie uchwytu instancji
+    mov    hInstance, eax	 ;Przekazanie do zmiennej hInstance
     INVOKE GetCommandLine
     mov    CommandLine, eax
-    INVOKE WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT
-    INVOKE ExitProcess, eax
+    INVOKE WinMain, hInstance, NULL, CommandLine, SW_SHOWDEFAULT ;Wywo³anie procedury WinMain z przekazanymi argumentami
+    INVOKE ExitProcess, eax 
 
+
+;Klasa okna
 WinMain PROC hInst:     HINSTANCE,\
              hPrevInst: HINSTANCE,\
              CmdLine:   LPSTR,\
              CmdShow:   DWORD
 
-
-
-LOCAL wc:WNDCLASSEX                                            ; tworzenie localych zmiennych na stosie
+LOCAL wc:WNDCLASSEX                                            ; tworzenie lokalnych zmiennych na stosie
 LOCAL msg:MSG
 LOCAL hwnd:HWND
 
-invoke	GetModuleHandle,NULL
-mov		hInstance,eax
-
     mov   wc.cbSize,SIZEOF WNDCLASSEX                   ; wype³nienie wartoœci struktury wc
-    mov   wc.style, CS_HREDRAW or CS_VREDRAW
-    mov   wc.lpfnWndProc, OFFSET WndProc
-    mov   wc.cbClsExtra,NULL
+    mov   wc.style, CS_HREDRAW or CS_VREDRAW			;Okreœlanie stylu klasy okna
+    mov   wc.lpfnWndProc, OFFSET WndProc				
+    mov   wc.cbClsExtra,NULL					
     mov   wc.cbWndExtra,NULL
     push  hInstance
     pop   wc.hInstance
     RGB   32,32,32
-    invoke	CreateSolidBrush,eax
-    mov   wc.hbrBackground,eax
-    mov   wc.lpszMenuName,NULL
-    mov   wc.lpszClassName,OFFSET ClassName
-    invoke LoadIcon,hInstance,8190
-    mov   wc.hIcon,eax
+    invoke	CreateSolidBrush,eax						;Stworzenie tworzy logiczny zapis przekazanego koloru
+    mov   wc.hbrBackground,eax							;Wype³nienie t³a tym kolorem
+    mov   wc.lpszMenuName,NULL							;Stworzenie kontrolki menu
+    mov   wc.lpszClassName,OFFSET ClassName				;Nadanie nazwy klasy okna
+    invoke LoadIcon,hInstance,8190						;Za³adowanie ikony
+    mov   wc.hIcon,eax									;Przekazanie ikony do klasy okna
     mov   wc.hIconSm,eax
-    invoke LoadCursor,NULL,IDC_ARROW
+    invoke LoadCursor,NULL,IDC_ARROW					
     mov   wc.hCursor,eax
     invoke RegisterClassEx, addr wc                       ; rejestrowanie naszej klasy window
 
 
 
     ;=========Centrowanie okna===========
-    INVOKE GetSystemMetrics, SM_CXSCREEN
+    INVOKE GetSystemMetrics, SM_CXSCREEN	;Pobranie szerokoœci okna w pikselach
     sub eax,920
     shr eax, 1
     push eax
-    INVOKE GetSystemMetrics, SM_CYSCREEN
+    INVOKE GetSystemMetrics, SM_CYSCREEN 	;Pobranie wysokoœci okna w pikselach
     sub eax,540
     shr eax, 1
     pop ebx
 
-
-    invoke CreateWindowEx,NULL,\
-                ADDR ClassName,\
-                ADDR AppName,\
-                WS_SYSMENU or WS_MINIMIZEBOX,\
-                ebx,\
-                eax,\
-                815,\
-                664,\
-                NULL,\
-                NULL,\
-                hInst,\
-                NULL
+    ;Procedura tworz¹ce nasze okno
+    invoke CreateWindowEx,NULL,\				
+                ADDR ClassName,\				
+                ADDR AppName,\					
+                WS_SYSMENU or WS_MINIMIZEBOX,\	                
+                ebx,\							
+                eax,\							
+                815,\							
+                664,\							
+                NULL,\							
+                NULL,\							
+                hInst,\							
+                NULL				
     mov   hwnd,eax
     invoke ShowWindow, hwnd,SW_SHOWNORMAL               ; wyœwietlenie naszego okienka na ekranie
     invoke UpdateWindow, hwnd                                 ; odœwie¿enie obszaru roboczego
@@ -455,15 +452,16 @@ LOCAL number:DWORD
 LOCAL index:DWORD
 LOCAL hfont:HFONT
 LOCAL Oldhfont:HFONT
+LOCAL hBrushBG:HBRUSH
 
-
-    invoke CreateCompatibleDC, hdc
-    mov hdcBuffer, eax
+          
+    invoke CreateCompatibleDC, hdc		;Stworzenie kompatybilnego kontekstu urz¹dzenia w pamiêci
+    mov hdcBuffer, eax					;Przekazanie do zmiennej hdcBuffer
     
     invoke CreateCompatibleBitmap, hdc, prc.right, prc.bottom
     mov hbmBuffer, eax
     
-    invoke SelectObject, hdcBuffer, hbmBuffer
+    invoke SelectObject, hdcBuffer, hbmBuffer	;Wprowadzenie aktualnego buffera bitmapy do zmiennej tymczasowej
     mov hbmOldBuffer, eax
 
     invoke CreateCompatibleDC, hdc
@@ -473,14 +471,15 @@ LOCAL Oldhfont:HFONT
 
     RGB   32,32,32
     invoke	CreateSolidBrush,eax
-    invoke FillRect, hdcBuffer, addr prc, eax
-    invoke SelectObject, hdcMem, hImage
-    invoke BitBlt, hdcBuffer, 0, 0, prc.right, prc.bottom, hdcMem, 0, 0, SRCCOPY
+    mov hBrushBG, eax
+    invoke FillRect, hdcBuffer, addr prc, hBrushBG	;Wype³nienie obszaru roboczego kolorem
+    invoke SelectObject, hdcMem, hImage			;Wprowadzenie do hdcMem bitmapy
+    invoke BitBlt, hdcBuffer, 0, 0, prc.right, prc.bottom, hdcMem, 0, 0, SRCCOPY ;Wyœwietlenie bitmapy, poprzez skopiowanie z pamiêci do w³aœciwego kontekstu urz¹dzenia
 
 ;=============SCORE AND LIFES===============
 
 
-invoke CreateFont, 24, 0, 0, 0, 0, 0, 0, 0,\
+invoke CreateFont, 24, 0, 0, 0, 0, 0, 0, 0,\			;Tworzenie w³asnej czcionki
                     OEM_CHARSET, OUT_DEFAULT_PRECIS,\
                     CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,\
                     DEFAULT_PITCH or FF_SCRIPT, ADDR FontName
@@ -491,8 +490,8 @@ RGB 129, 0, 0
 invoke SetTextColor, hdcBuffer, eax
 RGB   32,32,32
 invoke SetBkColor, hdcBuffer, eax
-invoke TextOut, hdcBuffer, 0, 605, ADDR LifesText, SIZEOF LifesText
-invoke IntToString, Lifes, ADDR numbBuff
+invoke TextOut, hdcBuffer, 0, 605, ADDR LifesText, SIZEOF LifesText ;Wyœwietlenie tekstu
+invoke IntToString, Lifes, ADDR numbBuff							;Funkcja konwertuj¹ca int na string
 invoke TextOut, hdcBuffer, 60, 605, eax, 10
 invoke TextOut, hdcBuffer, 200, 605, ADDR ScoreText, SIZEOF ScoreText
 invoke IntToString, Score, ADDR numbBuff
@@ -548,7 +547,7 @@ mov block.y, 20
 
 ;==============PLATFORM================
     invoke   SelectObject,hdcMem,hPad
-    invoke   TransparentBlt, hdcBuffer, pad.x, pad.y, 85, 17, hdcMem, 0, 0, 85, 17, 16777215
+    invoke   TransparentBlt, hdcBuffer, pad.x, pad.y, 85, 17, hdcMem, 0, 0, 85, 17, 16777215 ;Funkcja kopiuj¹ca bitmapê do kontekstu urz¹dzenia oraz tworz¹ca wyznaczony kolor jako maskê do przeŸroczystoœci (w tym przypadku ostatni argument, czyli kolor bia³y jest uznawany jako przeŸroczysty)
 
 
     invoke BitBlt, hdc, 0 ,0, prc.right, prc.bottom, hdcBuffer, 0, 0, SRCCOPY
@@ -557,17 +556,17 @@ mov block.y, 20
     invoke DeleteDC, hdcMem
 
     invoke SelectObject, hdcBuffer, hbmOldBuffer
+	;Usuwanie obiektów oraz kontekstów
     invoke DeleteDC, hdcBuffer
     invoke DeleteObject, hbmBuffer
     invoke DeleteObject, hbmOldBuffer
+    invoke DeleteObject, hBrushBG
     invoke DeleteObject, hfont
     invoke DeleteObject, Oldhfont
 
 ret
 
 DrawObjects endp
-
-
 
 
 
@@ -651,7 +650,7 @@ LOCAL hdc:HDC
         invoke KillTimer, hWnd, ID_TIMER
         invoke PostQuitMessage,NULL             ; zakoñczenie naszej aplikacji
     .ELSEIF uMsg == WM_CREATE
-        invoke LoadBitmap,hInstance,IDB_BACKGROUND
+        invoke LoadBitmap,hInstance,IDB_BACKGROUND			;Za³adowanie grafiki rastrowej do zmiennej hImage
         mov hImage,eax
         invoke LoadBitmap,hInstance,IDB_PAD
         mov hPad, eax
@@ -667,11 +666,11 @@ LOCAL hdc:HDC
         mov hBlock4, eax
         invoke LoadBitmap, hInstance, IDB_BLOCK5
         mov hBlock5, eax  
-        invoke SetTimer, hWnd, ID_TIMER, 8, NULL
-    .ELSEIF uMsg == WM_TIMER 
+        invoke SetTimer, hWnd, ID_TIMER, 8, NULL 			;Ustawienie timera czyli pêtli odœwiê¿aj¹cej siê co 8ms
+    .ELSEIF uMsg == WM_TIMER 								;Warunek dla sygna³u WM_TIMER
          invoke GetDC, hWnd
          mov hdc, eax
-         invoke GetClientRect, hWnd, ADDR rcClient
+         invoke GetClientRect, hWnd, ADDR rcClient			;Stworzenie obszaru roboczego
          invoke BallUpdate
          invoke DrawObjects, hdc, rcClient, hWnd
          invoke Collision, hdc, rcClient, hWnd
