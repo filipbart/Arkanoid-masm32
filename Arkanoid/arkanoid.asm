@@ -18,6 +18,7 @@ includelib \masm32\lib\comdlg32.lib
 includelib \masm32\lib\shell32.lib
 includelib \masm32\lib\msimg32.lib
 
+
 WinMain PROTO :DWORD, :DWORD, :DWORD, :DWORD
 
 RGB macro red,green,blue
@@ -45,12 +46,17 @@ ClassName db "Arkanoid",0        ; nazwa naszej klasy window
 AppName db "Arkanoid Game",0        ; nazwa naszego okienka
 LibName db "splash.dll",0
 FunctionName db "SplashScreen",0
-TestText db "Testowy",0
+FontName db "Helvetica",0
+FontName2 db "impact",0
+ScoreText db "Score:",0
+LifesText db "Lifes:",0
+WinText db "YOU WON!",0
+LoseText db "GAME OVER",0
+HelpText db "a,d - to move the pad    r - to reset game"
 ID_TIMER dd 1
-TimeMS DWORD 16
 Level1Blocks DWORD 40 dup (1)
-Lifes db 3
-Score db 0
+Lifes DWORD 3
+Score DWORD 0
 
 Block struct
 
@@ -70,8 +76,8 @@ Ball struct
     x dd 402
     y dd 570
 
-    movex dd -2
-    movey dd -4
+    movex dd -4
+    movey dd -2
 
 Ball ends
 
@@ -101,6 +107,8 @@ hBlock3 HBITMAP ?
 hBlock4 HBITMAP ?
 hBlock5 HBITMAP ?
 char WPARAM ?
+numbBuff db 11 dup (?)
+
 
 .CODE                ; Tu zaczyna siê nasz kod
 start:
@@ -144,7 +152,9 @@ mov		hInstance,eax
     mov   wc.cbWndExtra,NULL
     push  hInstance
     pop   wc.hInstance
-    mov   wc.hbrBackground,NULL
+    RGB   32,32,32
+    invoke	CreateSolidBrush,eax
+    mov   wc.hbrBackground,eax
     mov   wc.lpszMenuName,NULL
     mov   wc.lpszClassName,OFFSET ClassName
     invoke LoadIcon,hInstance,8190
@@ -155,16 +165,16 @@ mov		hInstance,eax
     invoke RegisterClassEx, addr wc                       ; rejestrowanie naszej klasy window
 
 
+
     ;=========Centrowanie okna===========
     INVOKE GetSystemMetrics, SM_CXSCREEN
-    sub eax,640
+    sub eax,920
     shr eax, 1
     push eax
     INVOKE GetSystemMetrics, SM_CYSCREEN
-    sub eax,440
+    sub eax,540
     shr eax, 1
     pop ebx
-
 
 
     invoke CreateWindowEx,NULL,\
@@ -194,10 +204,49 @@ mov		hInstance,eax
 WinMain endp
 
 
+;=======================WRITE TEXT=============================
+ResetGame proc hWnd:HWND
+
+mov ecx, 0
+.REPEAT
+mov [Level1Blocks + ecx * 4], 1
+inc ecx
+.UNTIL ecx == 40
+
+mov Score, 0
+mov Lifes, 3
+mov ball.x, 402
+mov ball.y, 570
+mov pad.x, 362
+mov pad.y, 583
+invoke SetTimer, hWnd, ID_TIMER, 8, NULL
+
+ret
+ResetGame endp
+
+IntToString PROC uses ebx numb:DWORD,buffer:DWORD
+
+    mov     ecx,buffer          ;ecx = 11 elements array
+    mov     eax,numb            ;eax = numb               
+    mov     ebx,10              ;ebx = 10
+    add     ecx,ebx             ;ecx = buffer + max size of string
+l1:
+    xor     edx,edx
+    div     ebx
+    add     edx,48              ; convert the digit to ASCII
+    mov     BYTE PTR [ecx],dl   ; store the character in the buffer
+    dec     ecx                 ; decrement ecx pointing the buffer
+    test    eax,eax             ; check if the quotient is 0
+    jnz     l1
+
+    inc     ecx
+    mov     eax,ecx             ; eax points the string in the buffer
+    ret
+
+IntToString ENDP
+
 ;========================COLLISION=============================
-Collision proc
-LOCAL yBlockBottom:DWORD
-LOCAL yBlockHalf:DWORD
+Collision proc hdc:HDC, rect:RECT, hWnd:HWND
 LOCAL xBlockLeft:DWORD
 LOCAL xBlockRight:DWORD
 LOCAL row:DWORD
@@ -217,10 +266,7 @@ jge NegMovex
 
 ;=========================BLOCKS COLLISION========================
 
-mov yBlockBottom, 140
-mov yBlockHalf, 130
 mov row, 1
-
 mov xBlockLeft, 710
 mov xBlockRight, 800
 
@@ -234,6 +280,7 @@ mov edx, xBlockRight
     .IF(eax == 1)
         mov [Level1Blocks + ecx * 4], 0
         neg ball.movey
+        add Score, 50
     .ENDIF
 .ENDIF
 sub xBlockLeft, 100
@@ -251,6 +298,7 @@ mov edx, xBlockRight
     .IF(eax == 1)
         mov [Level1Blocks + ecx * 4], 0
         neg ball.movey
+        add Score, 50
     .ENDIF
 .ENDIF
 sub xBlockLeft, 100
@@ -268,6 +316,7 @@ mov edx, xBlockRight
     .IF(eax == 1)
         mov [Level1Blocks + ecx * 4], 0
         neg ball.movey
+        add Score, 50
     .ENDIF
 .ENDIF
 sub xBlockLeft, 100
@@ -285,6 +334,7 @@ mov edx, xBlockRight
     .IF(eax == 1)
         mov [Level1Blocks + ecx * 4], 0
         neg ball.movey
+        add Score, 50
     .ENDIF
 .ENDIF    
 sub xBlockLeft, 100
@@ -302,15 +352,14 @@ mov edx, xBlockRight
     .IF(eax == 1)
         mov [Level1Blocks + ecx * 4], 0
         neg ball.movey
+        add Score, 50
     .ENDIF
 .ENDIF
 sub xBlockLeft, 100
 sub xBlockRight, 100 
 dec ecx
-.UNTIL ecx == 0
+.UNTIL ecx == -1
 .ENDIF
-
-
 
 
 ;========================PAD COLLISION=========================
@@ -402,17 +451,14 @@ LOCAL hbmBuffer:HBITMAP
 LOCAL hbmOldBuffer:HBITMAP
 LOCAL hdcMem:HDC
 LOCAL hbmOld:HBITMAP
-LOCAL bg:HBRUSH
 LOCAL number:DWORD
 LOCAL index:DWORD
-LOCAL row:DWORD
-
+LOCAL hfont:HFONT
+LOCAL Oldhfont:HFONT
 
 
     invoke CreateCompatibleDC, hdc
     mov hdcBuffer, eax
-
-    invoke SetBkMode, hdcBuffer, TRANSPARENT
     
     invoke CreateCompatibleBitmap, hdc, prc.right, prc.bottom
     mov hbmBuffer, eax
@@ -422,21 +468,43 @@ LOCAL row:DWORD
 
     invoke CreateCompatibleDC, hdc
     mov hdcMem, eax
+        
+;============BACKGROUND================
 
     RGB   32,32,32
     invoke	CreateSolidBrush,eax
     invoke FillRect, hdcBuffer, addr prc, eax
-
-   
-        
-;============BACKGROUND================
     invoke SelectObject, hdcMem, hImage
     invoke BitBlt, hdcBuffer, 0, 0, prc.right, prc.bottom, hdcMem, 0, 0, SRCCOPY
+
+;=============SCORE AND LIFES===============
+
+
+invoke CreateFont, 24, 0, 0, 0, 0, 0, 0, 0,\
+                    OEM_CHARSET, OUT_DEFAULT_PRECIS,\
+                    CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,\
+                    DEFAULT_PITCH or FF_SCRIPT, ADDR FontName
+
+invoke SelectObject, hdcBuffer, eax
+mov hfont, eax
+RGB 129, 0, 0
+invoke SetTextColor, hdcBuffer, eax
+RGB   32,32,32
+invoke SetBkColor, hdcBuffer, eax
+invoke TextOut, hdcBuffer, 0, 605, ADDR LifesText, SIZEOF LifesText
+invoke IntToString, Lifes, ADDR numbBuff
+invoke TextOut, hdcBuffer, 60, 605, eax, 10
+invoke TextOut, hdcBuffer, 200, 605, ADDR ScoreText, SIZEOF ScoreText
+invoke IntToString, Score, ADDR numbBuff
+invoke TextOut, hdcBuffer, 265, 605, eax, 10
+invoke TextOut, hdcBuffer, 400, 605, ADDR HelpText, SIZEOF HelpText
+invoke SelectObject, hdcBuffer, hfont
+mov Oldhfont, eax
+
 
 ;================BLOCKS====================
 mov ecx, 0
 mov ebx, 0
-mov number, 0
 mov index, 0 
 mov block.x, 10
 mov block.y, 20
@@ -492,26 +560,46 @@ mov block.y, 20
     invoke DeleteDC, hdcBuffer
     invoke DeleteObject, hbmBuffer
     invoke DeleteObject, hbmOldBuffer
+    invoke DeleteObject, hfont
+    invoke DeleteObject, Oldhfont
 
 ret
 
 DrawObjects endp
 
 
-;======================WINGAME==========================
-
-WinGame proc
 
 
-WinGame endp
 
-;======================GAMEOVER=========================
+;======================ENDGAME=========================
 
 EndGame proc hdc:HDC, prc:RECT, hWnd:HWND
+LOCAL hfont:HFONT
 
 mov ebx, ball.y
 mov eax, pad.y
 add eax, pad.pheight
+
+;======================WINGAME==========================
+.IF(Score == 2000)
+invoke DrawObjects, hdc, prc, hWnd
+INVOKE CreateFont,100, 0, 0, 0, 800, 1, 0, 0,\
+                          OEM_CHARSET, OUT_DEFAULT_PRECIS,\
+                          CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,\
+                          DEFAULT_PITCH or FF_SCRIPT, ADDR FontName2
+
+invoke SelectObject, hdc, eax
+mov    hfont, eax
+RGB    255,255,0
+INVOKE SetTextColor, hdc, eax
+RGB    0,0,160
+invoke SetBkColor, hdc, eax
+invoke TextOut, hdc, 207, 232, ADDR WinText, SIZEOF WinText
+invoke SelectObject, hdc, hfont
+invoke KillTimer, hWnd, ID_TIMER
+jmp NotEnd
+.ENDIF
+
 
 cmp eax, ebx
 jl LoseLife
@@ -525,16 +613,31 @@ LoseLife:
         mov ball.x, 402
         mov ball.y, 570
         jmp NotEnd
-    .ELSE
-        jmp EndEverything
+;======================GAMEOVER=========================
+    .ELSEIF (Lifes == 0)
+    mov ball.y, 1000
+    invoke DrawObjects, hdc, prc, hWnd
+    INVOKE CreateFont,100, 0, 0, 0, 800, 1, 0, 0,\
+                          OEM_CHARSET, OUT_DEFAULT_PRECIS,\
+                          CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,\
+                          DEFAULT_PITCH or FF_SCRIPT, ADDR FontName2
+
+    invoke SelectObject, hdc, eax
+    mov    hfont, eax
+    RGB    255,255,0
+    INVOKE SetTextColor, hdc, eax
+    RGB    0,0,160
+    invoke SetBkColor, hdc, eax
+    invoke TextOut, hdc, 207, 232, ADDR LoseText, SIZEOF LoseText
+    invoke SelectObject, hdc, hfont
+    invoke KillTimer, hWnd, ID_TIMER
+    jmp NotEnd
     .ENDIF
 
-EndEverything:
-   mov ball.y, 1000
-   invoke DrawObjects, hdc, prc, hWnd
-   invoke KillTimer, hWnd, ID_TIMER
+
    
 NotEnd:
+    invoke DeleteObject, hfont
     ret
     
 EndGame endp
@@ -548,7 +651,6 @@ LOCAL hdc:HDC
         invoke KillTimer, hWnd, ID_TIMER
         invoke PostQuitMessage,NULL             ; zakoñczenie naszej aplikacji
     .ELSEIF uMsg == WM_CREATE
-        ;call CreateBlocksArray
         invoke LoadBitmap,hInstance,IDB_BACKGROUND
         mov hImage,eax
         invoke LoadBitmap,hInstance,IDB_PAD
@@ -564,22 +666,17 @@ LOCAL hdc:HDC
         invoke LoadBitmap, hInstance, IDB_BLOCK4
         mov hBlock4, eax
         invoke LoadBitmap, hInstance, IDB_BLOCK5
-        mov hBlock5, eax
-
-        invoke SetTimer, hWnd, ID_TIMER, TimeMS, NULL
-
-    .ELSEIF uMsg == WM_TIMER
-         mov TimeMS, 16  
-         mov block.x, 10
-         mov block.y, 20
+        mov hBlock5, eax  
+        invoke SetTimer, hWnd, ID_TIMER, 8, NULL
+    .ELSEIF uMsg == WM_TIMER 
          invoke GetDC, hWnd
          mov hdc, eax
          invoke GetClientRect, hWnd, ADDR rcClient
          invoke BallUpdate
          invoke DrawObjects, hdc, rcClient, hWnd
-         invoke Collision
+         invoke Collision, hdc, rcClient, hWnd
          invoke EndGame, hdc, rcClient, hWnd
-         invoke ReleaseDC, hWnd, hdc             
+         invoke ReleaseDC, hWnd, hdc          
     .ELSEIF uMsg == WM_CHAR
          push wParam
          pop char
@@ -591,6 +688,8 @@ LOCAL hdc:HDC
             .IF pad.x < 718
             add pad.x, 6
             .ENDIF
+        .ELSEIF char == 'r'
+            invoke ResetGame, hWnd
         .ENDIF            
     .ELSE
         invoke DefWindowProc,hWnd,uMsg,wParam,lParam     ; domyœlne przetwarzanie wiadomoœci
